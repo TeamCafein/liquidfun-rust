@@ -1,6 +1,6 @@
-use super::*;
 use super::super::common::math::*;
 use super::super::common::settings::*;
+use super::*;
 use std::slice;
 
 #[repr(C)]
@@ -104,7 +104,7 @@ pub struct ParticleSystemDef {
 }
 
 impl Default for ParticleSystemDef {
-    fn default () -> ParticleSystemDef {
+    fn default() -> ParticleSystemDef {
         ParticleSystemDef {
             strict_contact_check: false,
             density: 1.0,
@@ -133,7 +133,7 @@ impl Default for ParticleSystemDef {
 
 pub enum B2ParticleSystem {}
 
-extern {
+extern "C" {
     fn b2ParticleSystem_CreateParticle(ps: *mut B2ParticleSystem, pd: &B2ParticleDef) -> Int32;
     fn b2ParticleSystem_DestroyParticle(ps: *mut B2ParticleSystem, index: Int32);
     fn b2ParticleSystem_GetParticleCount(ps: *mut B2ParticleSystem) -> Int32;
@@ -142,14 +142,12 @@ extern {
     fn b2ParticleSystem_GetPositionBuffer(ps: *mut B2ParticleSystem) -> *mut Vec2;
 }
 
-#[allow(raw_pointer_derive)]
 #[derive(Clone)]
 pub struct ParticleSystem {
-    pub ptr: *mut B2ParticleSystem
+    pub ptr: *mut B2ParticleSystem,
 }
 
 impl ParticleSystem {
-
     /// Create a particle whose properties have been defined.
     /// No reference to the definition is retained.
     /// A simulation step must occur before it's possible to interact with a
@@ -158,9 +156,7 @@ impl ParticleSystem {
     /// @warning This function is locked during callbacks.
     /// @return the index of the particle.
     pub fn create_particle(&self, pd: &ParticleDef) -> Int32 {
-        unsafe {
-            b2ParticleSystem_CreateParticle(self.ptr, &B2ParticleDef::from(pd))
-        }
+        unsafe { b2ParticleSystem_CreateParticle(self.ptr, &B2ParticleDef::from(pd)) }
     }
 
     /// Destroy a particle.
@@ -174,22 +170,18 @@ impl ParticleSystem {
 
     /// Get the number of particles.
     pub fn get_particle_count(&self) -> Int32 {
-        unsafe {
-            b2ParticleSystem_GetParticleCount(self.ptr)
-        }
+        unsafe { b2ParticleSystem_GetParticleCount(self.ptr) }
     }
 
     /// Get flags for a particle. See the ParticleFlags struct.
     pub fn get_particle_flags(&self, index: Int32) -> Option<ParticleFlags> {
-        unsafe {
-            ParticleFlags::from_bits(b2ParticleSystem_GetParticleFlags(self.ptr, index))
-        }
-    }    
+        unsafe { ParticleFlags::from_bits(b2ParticleSystem_GetParticleFlags(self.ptr, index)) }
+    }
 
     /// Get the next particle-system in the world's particle-system list.
     pub fn get_next(&self) -> Option<ParticleSystem> {
         let ptr: *mut B2ParticleSystem;
-        
+
         unsafe {
             ptr = b2ParticleSystem_GetNext(self.ptr);
         }
@@ -204,8 +196,10 @@ impl ParticleSystem {
     /// Get the position of each particle
     pub fn get_position_buffer(&self) -> &[Vec2] {
         unsafe {
-            slice::from_raw_parts(b2ParticleSystem_GetPositionBuffer(self.ptr), self.get_particle_count() as usize)
+            slice::from_raw_parts(
+                b2ParticleSystem_GetPositionBuffer(self.ptr),
+                self.get_particle_count() as usize,
+            )
         }
     }
-
 }

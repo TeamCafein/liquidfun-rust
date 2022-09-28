@@ -1,10 +1,10 @@
-use libc::size_t;
-use std::mem::transmute;
-use super::fixture::*;
 use super::super::collision::shapes::shape::*;
 use super::super::common::math::*;
 use super::super::common::settings::*;
+use super::fixture::*;
 use super::world::*;
+use libc::size_t;
+use std::mem::transmute;
 
 /// The body type.
 /// static: zero mass, zero velocity, may be manually moved
@@ -13,9 +13,9 @@ use super::world::*;
 #[repr(C)]
 #[derive(Debug)]
 pub enum BodyType {
-	StaticBody = 0,
-	KinematicBody,
-	DynamicBody
+    StaticBody = 0,
+    KinematicBody,
+    DynamicBody,
 }
 
 /// A body definition holds all the data needed to construct a rigid body.
@@ -23,7 +23,6 @@ pub enum BodyType {
 #[repr(C)]
 #[derive(Debug)]
 pub struct BodyDef {
-
     /// The body type: static, kinematic, or dynamic.
     /// Note: if a dynamic body would have zero mass, the mass is set to one.
     pub body_type: BodyType,
@@ -45,7 +44,6 @@ pub struct BodyDef {
     /// can be larger than 1.0f but the damping effect becomes sensitive to the
     /// time step when the damping parameter is large.
     pub linear_damping: Float32,
-
 
     /// Angular damping is use to reduce the angular velocity. The damping parameter
     /// can be larger than 1.0f but the damping effect becomes sensitive to the
@@ -75,53 +73,55 @@ pub struct BodyDef {
     pub user_data: size_t,
 
     /// Scale the gravity applied to this body.
-    pub gravity_scale : Float32,
+    pub gravity_scale: Float32,
 }
 
 impl Default for BodyDef {
-	fn default () -> BodyDef {
-    	BodyDef {
-	        user_data: 0,
-	        position: Vec2::default(),
-	        angle: 0.0,
-	        linear_velocity: Vec2::default(),
-	        angular_velocity: 0.0,
-	        linear_damping: 0.0,
-	        angular_damping: 0.0,
-	        allow_sleep: true,
-	        awake: true,
-	        fixed_rotation: false,
-	        bullet: false,
-	        body_type: BodyType::StaticBody,
-	        active: true,
-	        gravity_scale: 1.0,
-	    }
+    fn default() -> BodyDef {
+        BodyDef {
+            user_data: 0,
+            position: Vec2::default(),
+            angle: 0.0,
+            linear_velocity: Vec2::default(),
+            angular_velocity: 0.0,
+            linear_damping: 0.0,
+            angular_damping: 0.0,
+            allow_sleep: true,
+            awake: true,
+            fixed_rotation: false,
+            bullet: false,
+            body_type: BodyType::StaticBody,
+            active: true,
+            gravity_scale: 1.0,
+        }
     }
 }
 
 pub enum B2Body {}
 
-extern {
-    fn b2Body_CreateFixture_FromShape(this: *mut B2Body, shape: *const B2Shape, density: Float32) -> *mut B2Fixture;
+extern "C" {
+    fn b2Body_CreateFixture_FromShape(
+        this: *mut B2Body,
+        shape: *const B2Shape,
+        density: Float32,
+    ) -> *mut B2Fixture;
     fn b2Body_CreateFixture(this: *mut B2Body, def: *mut FixtureDef) -> *mut B2Fixture;
     fn b2Body_GetAngle(this: *mut B2Body) -> Float32;
     fn b2Body_GetFixtureList(this: *mut B2Body) -> *mut B2Fixture;
     fn b2Body_GetNext(this: *mut B2Body) -> *mut B2Body;
-    fn b2Body_GetPosition(this: *mut B2Body) -> &Vec2;
+    fn b2Body_GetPosition(this: &B2Body) -> &Vec2;
     fn b2Body_GetUserData(this: *const B2Body) -> usize;
     fn b2Body_GetWorld(this: *const B2Body) -> *mut B2World;
     fn b2Body_GetLocalPoint(this: *const B2Body, worldPoint: &Vec2) -> Vec2;
 }
 
 /// A rigid body. These are created via b2World::CreateBody.
-#[allow(raw_pointer_derive)]
 #[derive(Clone, Debug)]
 pub struct Body {
-	pub ptr: *mut B2Body
+    pub ptr: *mut B2Body,
 }
 
 impl Body {
-
     /// Creates a fixture and attach it to this body. Use this function if you need
     /// to set some fixture parameters, like friction. Otherwise you can create the
     /// fixture directly from a shape.
@@ -131,7 +131,9 @@ impl Body {
     /// @warning This function is locked during callbacks.
     pub fn create_fixture(&self, def: &FixtureDef) -> Fixture {
         unsafe {
-            Fixture { ptr: b2Body_CreateFixture(self.ptr, transmute(def)) }
+            Fixture {
+                ptr: b2Body_CreateFixture(self.ptr, transmute(def)),
+            }
         }
     }
 
@@ -144,16 +146,16 @@ impl Body {
     /// @warning This function is locked during callbacks.
     pub fn create_fixture_from_shape(&self, shape: &Shape, density: f32) -> Fixture {
         unsafe {
-            Fixture { ptr: b2Body_CreateFixture_FromShape(self.ptr, shape.handle(), density) }
+            Fixture {
+                ptr: b2Body_CreateFixture_FromShape(self.ptr, shape.handle(), density),
+            }
         }
     }
 
     /// Get the angle in radians.
     /// @return the current world rotation angle in radians.
     pub fn get_angle(&self) -> f32 {
-        unsafe {
-            b2Body_GetAngle(self.ptr)
-        }
+        unsafe { b2Body_GetAngle(self.ptr) }
     }
 
     /// Get the list of all fixtures attached to this body.
@@ -168,12 +170,12 @@ impl Body {
         } else {
             Some(Fixture { ptr: ptr })
         }
-    }    
+    }
 
     /// Get the next body in the world's body list.
     pub fn get_next(&self) -> Option<Body> {
         let ptr: *mut B2Body;
-        
+
         unsafe {
             ptr = b2Body_GetNext(self.ptr);
         }
@@ -182,35 +184,30 @@ impl Body {
             None
         } else {
             Some(Body { ptr: ptr })
-        }        
+        }
     }
 
     /// Get the world body origin position.
     /// @return the world position of the body's origin.
     pub fn get_position(&self) -> &Vec2 {
-        unsafe {
-            b2Body_GetPosition(self.ptr)
-        }
+        unsafe { b2Body_GetPosition(&*self.ptr) }
     }
 
     /// Get the user data pointer that was provided in the body definition.
     pub fn get_user_data(&self) -> usize {
-        unsafe {
-            b2Body_GetUserData(self.ptr)
-        }
+        unsafe { b2Body_GetUserData(self.ptr) }
     }
 
     /// Get the parent world of this body.
     pub fn get_world(&self) -> World {
         unsafe {
-            World { ptr: b2Body_GetWorld(self.ptr) }
+            World {
+                ptr: b2Body_GetWorld(self.ptr),
+            }
         }
     }
 
     pub fn get_local_point(&self, world_point: &Vec2) -> Vec2 {
-        unsafe {
-            b2Body_GetLocalPoint(self.ptr, world_point)
-        }
+        unsafe { b2Body_GetLocalPoint(self.ptr, world_point) }
     }
-
 }

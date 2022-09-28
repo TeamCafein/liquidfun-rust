@@ -1,6 +1,6 @@
-use libc::size_t;
 use super::super::collision::shapes::shape;
 use super::super::common::settings::*;
+use libc::size_t;
 
 /// This holds contact filtering data.
 #[repr(C)]
@@ -20,13 +20,13 @@ pub struct Filter {
 }
 
 impl Default for Filter {
-	fn default() -> Filter {
-		Filter {
+    fn default() -> Filter {
+        Filter {
             category_bits: 0x0001,
             mask_bits: 0xFFFF,
-            group_index: 0
-        }		
-	}
+            group_index: 0,
+        }
+    }
 }
 
 /// A fixture definition is used to create a fixture. This class defines an
@@ -54,7 +54,7 @@ pub struct FixtureDef {
     pub is_sensor: bool,
 
     /// Contact filtering data.
-    pub filter: Filter
+    pub filter: Filter,
 }
 
 impl FixtureDef {
@@ -66,14 +66,14 @@ impl FixtureDef {
             restitution: 0.0,
             density: 0.0,
             is_sensor: false,
-            filter: Filter::default()
+            filter: Filter::default(),
         }
     }
 }
 
 pub enum B2Fixture {}
 
-extern {
+extern "C" {
     fn b2Fixture_GetNext(this: *mut B2Fixture) -> *mut B2Fixture;
     fn b2Fixture_GetShape(this: *mut B2Fixture) -> *mut shape::B2Shape;
     fn b2Fixture_GetType(this: *mut B2Fixture) -> shape::Type;
@@ -84,20 +84,16 @@ extern {
 /// such as friction, collision filters, etc.
 /// Fixtures are created via b2Body::CreateFixture.
 /// @warning you cannot reuse fixtures.
-#[allow(raw_pointer_derive)]
 #[derive(Clone)]
 pub struct Fixture {
-    pub ptr: *mut B2Fixture
+    pub ptr: *mut B2Fixture,
 }
 
 impl Fixture {
-
     /// Get the type of the child shape. You can use this to down cast to the concrete shape.
     /// @return the shape type.
     pub fn get_type(&self) -> shape::Type {
-        unsafe {
-            b2Fixture_GetType(self.ptr)
-        }
+        unsafe { b2Fixture_GetType(self.ptr) }
     }
 
     /// Get the child shape. You can modify the child shape, however you should not change the
@@ -107,13 +103,13 @@ impl Fixture {
         unsafe {
             return b2Fixture_GetShape(self.ptr);
         }
-    }    
+    }
 
     /// Get the next fixture in the parent body's fixture list.
     /// @return the next fixture.
     pub fn get_next(&self) -> Option<Fixture> {
         let ptr: *mut B2Fixture;
-        
+
         unsafe {
             ptr = b2Fixture_GetNext(self.ptr);
         }
@@ -122,7 +118,6 @@ impl Fixture {
             None
         } else {
             Some(Fixture { ptr: ptr })
-        }        
+        }
     }
-
 }
