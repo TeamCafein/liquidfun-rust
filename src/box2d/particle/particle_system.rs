@@ -140,6 +140,8 @@ extern "C" {
     fn b2ParticleSystem_GetParticleFlags(ps: *mut B2ParticleSystem, index: Int32) -> UInt32;
     fn b2ParticleSystem_GetNext(ps: *mut B2ParticleSystem) -> *mut B2ParticleSystem;
     fn b2ParticleSystem_GetPositionBuffer(ps: *mut B2ParticleSystem) -> *mut Vec2;
+    fn b2ParticleSystem_GetVelocityBuffer(ps: *mut B2ParticleSystem) -> *mut Vec2;
+    fn b2ParticleSystem_GetColorBuffer(ps: *mut B2ParticleSystem) -> *mut ParticleColor;
 }
 
 #[derive(Clone)]
@@ -198,6 +200,26 @@ impl ParticleSystem {
         unsafe {
             slice::from_raw_parts(
                 b2ParticleSystem_GetPositionBuffer(self.ptr),
+                self.get_particle_count() as usize,
+            )
+        }
+    }
+
+    /// Get the velocity of each particle
+    pub fn get_velocity_buffer(&self) -> &[Vec2] {
+        unsafe {
+            slice::from_raw_parts(
+                b2ParticleSystem_GetVelocityBuffer(self.ptr),
+                self.get_particle_count() as usize,
+            )
+        }
+    }
+
+    /// Get the color of each particle
+    pub fn get_color_buffer(&self) -> &[ParticleColor] {
+        unsafe {
+            slice::from_raw_parts(
+                b2ParticleSystem_GetColorBuffer(self.ptr),
                 self.get_particle_count() as usize,
             )
         }

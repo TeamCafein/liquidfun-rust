@@ -10,6 +10,7 @@ extern "C" {
 }
 
 /// Small color object for each particle
+#[repr(C)]
 #[derive(Clone)]
 pub struct ParticleColor {
     pub ptr: *mut B2ParticleColor,

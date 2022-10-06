@@ -27,5 +27,13 @@ extern "C" {
 		return self->GetPositionBuffer();
 	}
 
+	b2Vec2 *b2ParticleSystem_GetVelocityBuffer(b2ParticleSystem *self) {
+		return self->GetVelocityBuffer();
+	}
+
+	b2ParticleColor *b2ParticleSystem_GetColorBuffer(b2ParticleSystem *self) {
+		return self->GetColorBuffer();
+	}
+
 } // extern C
 
